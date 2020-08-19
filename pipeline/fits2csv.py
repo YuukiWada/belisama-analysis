@@ -27,7 +27,8 @@ def gps_base_time(gps):
     elif (delta_time_gps.total_seconds()<-12.0*3600.0):
         time_obj_precise=time_obj_precise-datetime.timedelta(days=1.0)
     unixtime_precise=time_obj_precise.timestamp()
-    time_standard=[unixtime_precise, time_tag_base]
+    clock=clock_verification(gps)
+    time_standard=[unixtime_precise, time_tag_base, clock]
     return time_standard
 
 def non_gps_base_time(filename, event, gps):
@@ -37,7 +38,7 @@ def non_gps_base_time(filename, event, gps):
     delta_time_obj=time_obj_gps-time_obj_file
     time_lag_hour=round((delta_time_obj.total_seconds())/3600.0)
     time_obj_file=time_obj_file+datetime.timedelta(hours=time_lag_hour)
-    time_standard=[time_obj_file.timestamp(), int(event[0][1])]
+    time_standard=[time_obj_file.timestamp(), int(event[0][1]), 1.0e8]
     return time_standard
 
 def detect_counter_loop(event):
@@ -60,7 +61,7 @@ def check_loop(array, maximum):
         return array
 
 def extract_data(adc_channel, event, time_standard):
-    clock=1.0e8
+    clock=time_standard[2]
     data_mask_channel=event[(event["boardIndexAndChannel"]==adc_channel)]
     if (len(data_mask_channel)!=0):
         unixTime=np.array(data_mask_channel["timeTag"], np.float64)
@@ -98,6 +99,26 @@ def check_file(file):
         print(file, "does not exist.")
         exit()
 
+def clock_verification(gps):
+    clock=1.0e8
+    time_tag=np.array([gps[0][0]], dtype="int64")
+    for i in range(1, len(gps)):
+        if (gps[i][2]!="NULL") and (gps[i][2]!=""):
+            time_tag=np.append(time_tag, gps[i][0])
+    time_tag=time_tag&0xFFFFFFFFFF
+    time_tag=check_loop(time_tag, 2**40)
+    if (time_tag.size<2):
+        return clock
+    else:
+        second=float(time_tag[time_tag.size-1]-time_tag[0])/clock
+        second_precise=round(second)
+        clock_precise=float(time_tag[time_tag.size-1]-time_tag[0])/float(second_precise)
+        rate=(clock_precise-clock)/clock
+        if (abs(rate)>1.0e-4):
+            return clock
+        else:
+            return clock_precise
+        
 # reading argiment parameters                                                                       
 args=sys.argv
 if len(args)<1:
@@ -113,7 +134,6 @@ check_file(output_dir)
 fits_file=fitsio.open(input_file)
 event=fits_file[1].data
 time_standard=gps_verification(input_file, fits_file)
-
 
 # main process
 for adc in range(4):
