@@ -161,5 +161,3 @@ samples/fits/20180312_105530.fits.gz
 samples/csv/20180312_105530_ch0.csv.gz
 ```
 
-
-Traduit avec www.DeepL.com/Translator (version gratuite)
