@@ -41,8 +41,12 @@ The instrument of radiation measurements provides a list of detected gamma-ray p
  python -m pip install numpy
  ```
 
-## Usage
+### Clone scripts to local
+```
+git clone https://github.com/YuukiWada/belisama-analysis.git
+```
 
+## Usage
 ### Pipeline scripts
 There are two scripts for pipeline processes:
 ```
@@ -88,3 +92,71 @@ can be obtained.
 
 The third column contains dead counts: the number of photons that were triggered by the instrument between the last photon record (in the previous line) but not recorded due to buffer overflow. In a normal operation, dead counts are 0. However, dead counts will increase when a lot of photons are
 detected instantaneously and photon data cannot be transported from FPGA to Raspberry Pi, or Raspberry Pi has a lot of other background processes that occupy CPU resources.
+
+`fits2csv_batch.py` converts multiple FITS files to CSV files. Its usage is
+```
+python fits2csv_batch.py <input directory> <output directory>
+```
+
+When the commands
+```
+python fits2csv.py ./fits ./csv
+```
+is executed, the script trys to find `*.fits` and `*.fits.gz` files in `./fits`, and all the FITS files in the directory are converted into CSV format. The other function is the same as `fits2csv.py`.
+
+### Analysis scripts
+There are six scripts for analysis:
+```
+scripts/spec_fits.py
+scripts/spec_gzip.py
+scripts/spec_gzip_calibration.py
+scripts/lightcurve_fits.py
+scripts/lightcurve_gzip.py
+scripts/lightcurve_gzip_calibration.py
+```
+
+`spec_fits.py` generates an energy spectrum in the channel unit. The usage is
+```
+python spec_fits.py <input file> <adc channel> <binning (option)>
+```
+This script is useful to quicklook an energy spectrum of a FITS file before converting into CSV. The input ADC channel should be specified. When binnning is indicated, the energy spectrum will be binned.
+
+`spec_gzip.py` generates an energy spectrum in the channel unit from a converted CSV file. The usage is
+```
+python spec_gzip.py <input file> <binning (option)>
+```
+
+`spec_gzip_calibration.py` generates an energy spectrum in the unit MeV from a converted CSV file. The usage is
+```
+python spec_gzip.py <input file> <p0> <p1> <binning (option)>
+```
+p0 and p1 are parameters of a calibration curve given by
+```
+Energy (MeV) = p0 + Channel * p1"
+```
+The example of calibration curve is described above.
+
+`lightcurve_fits.py` generates a lightcurve or a count-rate history. The usage is
+```
+python lightcurve_fits.py <input file> <adc channel> <bin width (sec)> <lower threshold> <upper threshold>
+```
+This script is useful to quicklook a lightcurve of a FITS file before converting into CSV. The input ADC channel should be specified. Thresholds should be given in the channel unit.
+
+`lightcurve_gzip.py` generates a lightcurve or a count-rate history from a converted CSV file. The usage is
+```
+python lightcurve_gzip.py <input file> <bin width (sec)> <lower threshold> <upper threshold>
+```
+Thresholds should be given in the channel unit.
+
+`lightcurve_gzip_calibration.py` generates a lightcurve or a count-rate history from a converted CSV file. The energy thresholds can be given in the MeV unit. The usage is
+```
+python lightcurve_gzip.py <input file> <bin width (sec)> <p0> <p1> <lower threshold (MeV)> <upper threshold (MeV)>
+```
+p0 and p1 are the same as `spec_gzip_calibration.py`.
+
+## Sample data
+A sample FITS file and a converted CSV file are stored in `samples/`.
+```
+samples/fits/20180312_105530.fits.gz
+samples/csv/20180312_105530_ch0.csv.gz
+```
