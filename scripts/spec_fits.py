@@ -10,7 +10,7 @@ import sys
 args=sys.argv
 if len(args)<2:
     print("Error: invalid number of arguments")
-    print("Usage: python ql_spec.py <input file> <adc channel> <binning (option)>")
+    print("Usage: python spec_fits.py <input file> <adc channel> <binning (option)>")
     exit()
 
 input_file=args[1]
